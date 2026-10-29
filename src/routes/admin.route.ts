@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addNewBook, addNewGrade, editBookData, editGrade, getAllBooksList, getGradesList, getSingleGradeData, importBooksViaXlsx, patchBookStatusData } from "../controllers";
+import { addNewBook, addNewGrade, editBookData, editGrade, getAllBooksList, getAllStudentsList, getGradesList, getSingleGradeData, importBooksViaXlsx, patchBookStatusData } from "../controllers";
 import { upload } from "../utils";
 
 export const adminRoute = (app: Router) => {
@@ -15,6 +15,8 @@ export const adminRoute = (app: Router) => {
     router.put('/grade', editGrade);
     router.post('/grade/data', getSingleGradeData);
     router.get('/grades/list', getGradesList);
+    
+    router.get('/students/list', getAllStudentsList);
 
     app.use( '/admin', router )
 }

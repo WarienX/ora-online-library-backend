@@ -4,8 +4,17 @@ import { getTypeOrmRepository, requestHandler } from "../utils";
 import { Not, Repository } from "typeorm";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
-import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList } from "../services";
+import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList, getAdminStudentsList } from "../services";
 import { readExcelFile } from "../utils";
+
+export const getAllStudentsList = requestHandler(async (req: IRequest, res: Response) => {
+    const list = await getAdminStudentsList();
+
+    return res.status(StatusCodes.OK).json({
+        message: 'Students fetched successfully',
+        list
+    });
+})
 
 export const addNewBook = requestHandler(async (req: IRequest, res: Response) => {
     const { book_name, series_name, author, genre, language, gradeId } = req.body;

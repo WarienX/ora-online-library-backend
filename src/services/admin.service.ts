@@ -1,5 +1,5 @@
 import { Equal, ILike, In, Not, Or, Repository } from "typeorm";
-import { BookEntity, BookGradeEntity, BookStatus, BookStatusEntity, UserRole } from "../libs";
+import { BookEntity, BookGradeEntity, BookStatus, BookStatusEntity, StudentEntity, UserRole } from "../libs";
 import { getTypeOrmRepository } from "../utils";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
@@ -53,8 +53,9 @@ export const addNewBookGrades = async (bookGradeList: BookGradeEntity[]) => {
 
 export const getAdminBooksList = async (page: number, limit: number, status: BookStatus, search?: string) => {
     const bookRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
-
+    console.log({ page, limit, status });
     const skip = page * limit;
+    console.log({ skip });
     const term = search?.trim();
     console.log('search term', term);
     if (status === BookStatus.AVAILABLE) {
@@ -312,4 +313,30 @@ export const unreserveBook = async (bookId: number, studentId: number, loggedinU
     } else {
         throw new ExpressException("Book is not reserved by this student", StatusCodes.FORBIDDEN);
     }
+}
+
+export const getAdminStudentsList = async () => {
+    const studentsRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
+
+    const studentsList = await studentsRepo.find({
+        select: {
+            id: true,
+            user_id: true
+        },
+        relations: {
+            user: true,
+            grade: true
+        }
+    })
+
+    const formattedStudentsList = studentsList.map(student => {
+        return {
+            id: student.id,
+            user_id: student.user_id,
+            full_name: student.user.full_name,
+            grade: student.grade.name,
+        }
+    })
+
+    return formattedStudentsList;
 }
