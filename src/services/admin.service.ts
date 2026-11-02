@@ -222,8 +222,8 @@ const addBorrowedBook = async (bookId: number, studentId: number, loggedinUserId
 
 const addReturnedBook = async (bookId: number, studentId: number, loggedinUserId: number) => {
     const loggedInUser = await fetchUserData(loggedinUserId);
-
-    if (!loggedInUser.role.includes[UserRole.ADMIN,UserRole.LIBRARIAN]) {
+    console.log({ UserRole: loggedInUser.role });
+    if (!loggedInUser.role.indexOf(UserRole.ADMIN) && !loggedInUser.role.indexOf(UserRole.LIBRARIAN)) {
         throw new ExpressException("Book cannot be returned by " + loggedInUser.role, StatusCodes.FORBIDDEN);
     } else {
         const bookStatusRepo = getTypeOrmRepository(BookStatusEntity) as Repository<BookStatusEntity>;
