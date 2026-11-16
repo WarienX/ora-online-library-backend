@@ -24,6 +24,9 @@ const handler = async (req: IRequest, res: Response, next: NextFunction) => {
 
             if (isUserSessionActive == true) {
                 const loggedInUser = await fetchUserData(Number(req.payload.user_id));
+                if (!loggedInUser) {
+                    throw new ExpressException("User not found", StatusCodes.NOT_FOUND);
+                }
                 req.authenticatedUser = loggedInUser;
                 req.payload.role = loggedInUser.role as UserRole;
                 if (req.payload.role != UserRole.STUDENT) {

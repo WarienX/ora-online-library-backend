@@ -1,6 +1,6 @@
 import { BookStatus, IRequest, StudentEntity, UserEntity } from "../libs";
 import { Response } from 'express'
-import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentProfileInfo, sanitizeUserData, updateUserData } from "../services";
+import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentProfileInfo, sanitizeUserData, updateUserData, verifyPassword } from "../services";
 import { getTypeOrmRepository, requestHandler } from "../utils";
 import { StatusCodes } from "http-status-codes";
 import { ExpressException } from "../errors";
@@ -125,5 +125,29 @@ export const updateStudentBookStatusData = requestHandler(async (req: IRequest, 
             message: 'Updated Book Status successfully',
             data: updatedBookStatus
         });
+    }
+})
+
+export const verifyParentMasterPassword = requestHandler(async (req: IRequest, res: Response) => {
+    const { master_password } = req.body;
+
+    const userId = req.authenticatedUser.id;
+
+    const checkUserData = await fetchUserData(userId);
+
+    if (!checkUserData) {
+        throw new ExpressException("User not found", StatusCodes.NOT_FOUND);
+    } else {
+        if (checkUserData.is_active == false) {
+            throw new ExpressException("User Account is Deactivated", StatusCodes.FORBIDDEN);
+        } else {
+            const isPasswordMatch = await verifyPassword(master_password, checkUserData.master_password);
+            return res.status(StatusCodes.OK).json({
+                message: 'Master Password Verification',
+                data: {
+                    isPasswordMatch
+                }
+            });
+        }
     }
 })
