@@ -76,3 +76,42 @@ export const updateBookStatus = async (bookId: number, status: string) => {
         return bookRepo.save(getBookStatus);
     }
 }
+
+export const getStudentBooksMetrics = async (studentId: number) => {
+    const bookStatusRepo = getTypeOrmRepository(BookStatusEntity) as Repository<BookStatusEntity>;
+    const studentBooks = await bookStatusRepo.find({
+        where: {
+            student_id: studentId,
+            status: In([BookStatus.BORROWED, BookStatus.RESERVED])
+        },
+        relations: {
+            book: true
+        }
+    })
+    
+    const borrowedBooks = studentBooks.filter(book => book.status === BookStatus.BORROWED);
+    const reservedBooks = studentBooks.filter(book => book.status === BookStatus.RESERVED);
+
+    const overdueBooks = borrowedBooks.filter(book => {
+        if (book.return_by_date) {
+            return checkIfBookIsOverdue(book.return_by_date);
+        }
+        return false;
+    })
+
+    return {
+        metrics: {
+            borrowedCount: borrowedBooks.length,
+            reservedCount: reservedBooks.length,
+            overdueCount: overdueBooks.length,
+        },
+        borrowedBooks,
+        reservedBooks
+    }
+}
+
+const checkIfBookIsOverdue = (returnByDate: string) => {
+    const currentDate = new Date();
+    const returnDate = new Date(returnByDate);
+    return currentDate > returnDate;
+}

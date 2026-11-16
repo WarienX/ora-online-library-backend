@@ -1,6 +1,6 @@
 import { BookStatus, IRequest, StudentEntity, UserEntity } from "../libs";
 import { Response } from 'express'
-import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentProfileInfo, sanitizeUserData, updateUserData, verifyPassword } from "../services";
+import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentBooksMetrics, getStudentProfileInfo, sanitizeUserData, updateUserData, verifyPassword } from "../services";
 import { getTypeOrmRepository, requestHandler } from "../utils";
 import { StatusCodes } from "http-status-codes";
 import { ExpressException } from "../errors";
@@ -149,5 +149,33 @@ export const verifyParentMasterPassword = requestHandler(async (req: IRequest, r
                 }
             });
         }
+    }
+})
+
+export const getParentDashboardMetrics = requestHandler(async (req: IRequest, res: Response) => {
+    const userId = req.authenticatedUser.id;
+
+    const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
+    const studentData = await studentRepo.findOne({
+        where: {
+            user_id: userId
+        },
+        relations: {
+            grade: true
+        }
+    })
+
+    if (!studentData) {
+        throw new ExpressException("Student data not found", StatusCodes.NOT_FOUND);
+    } else {
+        const studentMetrics = await getStudentBooksMetrics(studentData.id);
+        return res.status(StatusCodes.OK).json({
+            message: 'Parent Dashboard Metrics',
+            data: {
+                ...studentMetrics,
+                studentName: studentData.user.full_name,
+                studentGrade: studentData.grade.name
+            }
+        });
     }
 })
