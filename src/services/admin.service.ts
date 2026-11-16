@@ -175,7 +175,7 @@ const addBorrowedBook = async (bookId: number, studentId: number, loggedinUserId
     } else {
         
         const todaysDate = new Date();
-        const returnByDate = new Date(new Date().setDate((todaysDate.getDay() + 7))); // Return in 7 days
+        const returnByDate = new Date(new Date().setDate((todaysDate.getDate() + 7))); // Return in 7 days
 
         const checkStudentBookStatus = await bookStatusRepo.findOne({
             where: {
