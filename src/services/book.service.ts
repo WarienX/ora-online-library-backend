@@ -105,8 +105,28 @@ export const getStudentBooksMetrics = async (studentId: number) => {
             reservedCount: reservedBooks.length,
             overdueCount: overdueBooks.length,
         },
-        borrowedBooks: borrowedBooks.map(book => book.book),
-        reservedBooks: reservedBooks.map(book => book.book)
+        borrowedBooks: borrowedBooks.map(book => {
+            if (book.status === BookStatus.BORROWED) {
+                const bookData = book.book;
+                return {
+                    ...bookData,
+                    reserved_on: book.reserved_on,
+                    borrowed_on: book.borrowed_on,
+                    return_by_date: book.return_by_date,
+                };
+            }
+        }),
+        reservedBooks: reservedBooks.map(book => {
+            if (book.status === BookStatus.RESERVED) {
+                const bookData = book.book;
+                return {
+                    ...bookData,
+                    reserved_on: book.reserved_on,
+                    borrowed_on: book.borrowed_on,
+                    return_by_date: book.return_by_date,
+                };
+            }
+        })
     }
 }
 

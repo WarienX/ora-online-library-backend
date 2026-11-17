@@ -161,6 +161,7 @@ export const getParentDashboardMetrics = requestHandler(async (req: IRequest, re
             user_id: userId
         },
         relations: {
+            user: true,
             grade: true
         }
     })
