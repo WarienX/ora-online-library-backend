@@ -105,8 +105,8 @@ export const getStudentBooksMetrics = async (studentId: number) => {
             reservedCount: reservedBooks.length,
             overdueCount: overdueBooks.length,
         },
-        borrowedBooks,
-        reservedBooks
+        borrowedBooks: borrowedBooks.map(book => book.book),
+        reservedBooks: reservedBooks.map(book => book.book)
     }
 }
 

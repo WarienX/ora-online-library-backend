@@ -129,7 +129,7 @@ export const updateStudentBookStatusData = requestHandler(async (req: IRequest, 
 })
 
 export const verifyParentMasterPassword = requestHandler(async (req: IRequest, res: Response) => {
-    const { master_password } = req.body;
+    const { password } = req.body;
 
     const userId = req.authenticatedUser.id;
 
@@ -141,7 +141,7 @@ export const verifyParentMasterPassword = requestHandler(async (req: IRequest, r
         if (checkUserData.is_active == false) {
             throw new ExpressException("User Account is Deactivated", StatusCodes.FORBIDDEN);
         } else {
-            const isPasswordMatch = await verifyPassword(master_password, checkUserData.master_password);
+            const isPasswordMatch = await verifyPassword(password, checkUserData.master_password);
             return res.status(StatusCodes.OK).json({
                 message: 'Master Password Verification',
                 data: {
