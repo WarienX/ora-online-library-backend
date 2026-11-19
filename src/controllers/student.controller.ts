@@ -184,7 +184,7 @@ export const getParentDashboardMetrics = requestHandler(async (req: IRequest, re
 export const getStudentDashboardData = requestHandler(async (req: IRequest, res: Response) => {
     const userId = req.authenticatedUser.id;
     const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
-    
+
     try {
         const studentData = await studentRepo.findOne({
             where: {
@@ -206,6 +206,7 @@ export const getStudentDashboardData = requestHandler(async (req: IRequest, res:
             });
         }
     } catch (error) {
+        console.error({ error });
         throw new ExpressException("Error fetching student dashboard data", StatusCodes.INTERNAL_SERVER_ERROR);
     }
 })

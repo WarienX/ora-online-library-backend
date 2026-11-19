@@ -293,7 +293,8 @@ export const getStudentDashboard = async (studentId: number): Promise<IStudentDa
   const student = await studentRepo.findOne({
     where: { id: studentId },
     relations: {
-      grade: true
+        user: true,
+        grade: true
     }
   });
 
@@ -357,7 +358,7 @@ export const getStudentDashboard = async (studentId: number): Promise<IStudentDa
   const returnedThisMonth = await bookStatusRepo.count({
     where: {
       student_id: studentId,
-      status: BookStatus.RETURN,
+      status: BookStatus.AVAILABLE,
       updated_at: MoreThanOrEqual(startOfMonth)
     }
   });
@@ -367,7 +368,7 @@ export const getStudentDashboard = async (studentId: number): Promise<IStudentDa
     ...reservedIds
   ]);
 
-  const studentName = (student as any).full_name || (student as any).name || 'Student';
+  const studentName = student.user.full_name || 'Student';
 
   const gradeName = (student as any).grade?.name || ((student as any).grade?.grade_number != null ? `Grade ${(student as any).grade.grade_number}` : undefined);
 
