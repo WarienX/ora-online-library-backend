@@ -1,6 +1,6 @@
 import { BookStatus, IRequest, StudentEntity, UserEntity } from "../libs";
 import { Response } from 'express'
-import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentBooksMetrics, getStudentProfileInfo, sanitizeUserData, updateUserData, verifyPassword } from "../services";
+import { addNewBookStatus, addStudentData, checkIfStudentDataExists, checkOraWorldSchoolEmail, fetchUserData, getStudentBooksList, getStudentBooksMetrics, getStudentDashboard, getStudentProfileInfo, sanitizeUserData, updateUserData, verifyPassword } from "../services";
 import { getTypeOrmRepository, requestHandler } from "../utils";
 import { StatusCodes } from "http-status-codes";
 import { ExpressException } from "../errors";
@@ -178,5 +178,34 @@ export const getParentDashboardMetrics = requestHandler(async (req: IRequest, re
                 studentGrade: studentData.grade.name
             }
         });
+    }
+})
+
+export const getStudentDashboardData = requestHandler(async (req: IRequest, res: Response) => {
+    const userId = req.authenticatedUser.id;
+    const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
+    
+    try {
+        const studentData = await studentRepo.findOne({
+            where: {
+                user_id: userId
+            },
+            relations: {
+                user: true,
+                grade: true
+            }
+        })
+
+        if (!studentData) {
+            throw new ExpressException("Student data not found", StatusCodes.NOT_FOUND);
+        } else {
+            const studentDashboardData = await getStudentDashboard(studentData.id);
+            return res.status(StatusCodes.OK).json({
+                message: 'Student Dashboard Data',
+                data: studentDashboardData
+            });
+        }
+    } catch (error) {
+        throw new ExpressException("Error fetching student dashboard data", StatusCodes.INTERNAL_SERVER_ERROR);
     }
 })

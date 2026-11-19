@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authorizationMiddleware, studentMiddleware } from "../middlewares";
-import { checkStudentDataStatus, getParentDashboardMetrics, getStudentBooks, getStudentProfileData, onboardStudentGoogleUser, updateStudentBookStatusData, updateStudentData, verifyParentMasterPassword } from "../controllers";
+import { checkStudentDataStatus, getParentDashboardMetrics, getStudentBooks, getStudentDashboardData, getStudentProfileData, onboardStudentGoogleUser, updateStudentBookStatusData, updateStudentData, verifyParentMasterPassword } from "../controllers";
 
 export const studentRoute = (app: Router) => {
     const router = Router();
@@ -12,8 +12,11 @@ export const studentRoute = (app: Router) => {
 
     router.get('/', studentMiddleware, getStudentProfileData);
     router.patch('/', studentMiddleware, updateStudentData);
+
     router.post('/master-password', studentMiddleware, verifyParentMasterPassword);
     router.get('/parent-dashboard', studentMiddleware, getParentDashboardMetrics);
+    
+    router.get('/dashboard', studentMiddleware, getStudentDashboardData);
 
     app.use( '/student', router )
 }

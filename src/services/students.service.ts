@@ -1,9 +1,11 @@
-import { ILike, In, Repository } from "typeorm";
-import { BookEntity, BookStatus, BookStatusEntity, GradeEntity, StudentEntity, UserEntity } from "../libs";
+import { ILike, In, MoreThanOrEqual, Not, Repository } from "typeorm";
+import { BookEntity, BookStatus, BookStatusEntity, GradeEntity, IStudentDashboardBook, IStudentDashboardData, ISuggestedBook, StudentEntity, UserEntity } from "../libs";
 import { getTypeOrmRepository } from "../utils";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
 import { sanitizeUserData } from "./auth.service";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export const addStudentData = async (user_data: UserEntity , fathers_email: string, fathers_mobile: string, mothers_email: string, mothers_mobile: string, grade: number) => {
     const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
@@ -225,3 +227,161 @@ const getBorrowedReservedBooks = async (page: number, limit: number, status: Boo
 
     return { studentBooksList, count };
 }
+
+const daysUntilDue = (date: Date | string | null | undefined): number | null => {
+    if (!date) return null;
+
+    const target = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    return Math.ceil((target.getTime() - today.getTime()) / MS_PER_DAY);
+}
+
+export const mapBorrowedBooks = (book: BookEntity, status: BookStatusEntity): IStudentDashboardBook => {
+    const returnBy = status.return_by_date ?? null;
+    const days = daysUntilDue(returnBy);
+
+    return {
+        id: book.id,
+        title: book.name,
+        author: book.author,
+        borrowedOn: status.borrowed_on ? new Date(status.borrowed_on).toISOString() : null,
+        returnByDate: returnBy ? new Date(returnBy).toISOString() : null,
+        isOverdue: days != null ? days < 0 : false,
+        daysUntilDue: days
+    };
+}
+
+export const mapReservedBooks = (book: BookEntity, status: BookStatusEntity): IStudentDashboardBook => {
+    return {
+        id: book.id,
+        title: book.name,
+        author: book.author,
+        coverUrl: (book as any).cover_url ?? null,
+        reservedOn: status.reserved_on
+        ? new Date(status.reserved_on).toISOString()
+        : null
+    };
+}
+
+export const getSuggestedBooks = async (studentId: number, excludeBookIds: number[]): Promise<ISuggestedBook[]> => {
+    const booksRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
+
+    const status = BookStatus.AVAILABLE;
+    const where = excludeBookIds.length > 0 ? { id: Not(In(excludeBookIds)), status } : { status };
+
+    const suggestedBooks = await booksRepo.find({
+        where,
+        take: 5,
+        order: { created_at: 'DESC' }
+    });
+
+    return suggestedBooks.map((b) => ({
+        id: b.id,
+        title: b.name,
+        author: b.author,
+        reason: 'Available in the ORA library'
+    }));
+}
+
+export const getStudentDashboard = async (studentId: number): Promise<IStudentDashboardData> => {
+  const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
+  const bookStatusRepo = getTypeOrmRepository(BookStatusEntity) as Repository<BookStatusEntity>;
+  const bookRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
+
+  const student = await studentRepo.findOne({
+    where: { id: studentId },
+    relations: {
+      grade: true
+    }
+  });
+
+  if (!student) {
+    throw new Error('Student not found');
+  }
+
+  const statusRows = await bookStatusRepo.find({
+    where: { student_id: studentId },
+    select: {
+      id: true,
+      book_id: true,
+      status: true,
+      borrowed_on: true,
+      return_by_date: true,
+      reserved_on: true,
+      updated_at: true
+    }
+  });
+
+  const borrowedStatus = statusRows.filter((s) => s.status === BookStatus.BORROWED);
+  const reservedStatus = statusRows.filter((s) => s.status === BookStatus.RESERVED);
+
+  const borrowedIds = borrowedStatus.map((s) => s.book_id);
+  const reservedIds = reservedStatus.map((s) => s.book_id);
+  const allIds = Array.from(new Set([...borrowedIds, ...reservedIds]));
+
+  let booksById = new Map<number, BookEntity>();
+
+  if (allIds.length) {
+    const books = await bookRepo.find({
+      where: { id: In(allIds) }
+    });
+    booksById = new Map(books.map((b) => [b.id, b]));
+  }
+
+  const borrowedBooks: IStudentDashboardBook[] = borrowedStatus
+    .map((s) => {
+      const book = booksById.get(s.book_id);
+      return book ? mapBorrowedBooks(book, s) : null;
+    })
+    .filter(Boolean) as IStudentDashboardBook[];
+
+  const reservedBooks: IStudentDashboardBook[] = reservedStatus
+    .map((s) => {
+      const book = booksById.get(s.book_id);
+      return book ? mapReservedBooks(book, s) : null;
+    })
+    .filter(Boolean) as IStudentDashboardBook[];
+
+  // ---- Metrics ----
+  const dueSoonCount = borrowedBooks.filter(
+    (b) => b.isOverdue || (b.daysUntilDue != null && b.daysUntilDue <= 3)
+  ).length;
+
+  // Returned this month
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const returnedThisMonth = await bookStatusRepo.count({
+    where: {
+      student_id: studentId,
+      status: BookStatus.RETURN,
+      updated_at: MoreThanOrEqual(startOfMonth)
+    }
+  });
+
+  const suggestedBooks = await getSuggestedBooks(studentId, [
+    ...borrowedIds,
+    ...reservedIds
+  ]);
+
+  const studentName = (student as any).full_name || (student as any).name || 'Student';
+
+  const gradeName = (student as any).grade?.name || ((student as any).grade?.grade_number != null ? `Grade ${(student as any).grade.grade_number}` : undefined);
+
+  return {
+    studentName,
+    gradeName,
+    metrics: {
+      borrowedCount: borrowedBooks.length,
+      reservedCount: reservedBooks.length,
+      dueSoonCount,
+      returnedThisMonth
+    },
+    borrowedBooks,
+    reservedBooks,
+    suggestedBooks
+  };
+};
