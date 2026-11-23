@@ -340,3 +340,38 @@ export const getAdminStudentsList = async () => {
 
     return formattedStudentsList;
 }
+
+const mapRecentBorrowedBooks = async (books: BookStatusEntity[]) => {
+    const result = books.map(selectedBook => {
+        const returnByDate = selectedBook.return_by_date ? new Date(selectedBook.return_by_date) : null;
+        const borrowedOn = selectedBook.borrowed_on ? new Date(selectedBook.borrowed_on).toISOString() : null;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        return {
+            id: selectedBook.id,
+            bookTitle: selectedBook.book.name,
+            studentName: selectedBook.student.user.full_name || 'Unknown Student',
+            borrowedOn,
+            returnByDate: returnByDate ? returnByDate.toISOString() : null,
+            isOverdue: returnByDate ? returnByDate < today : false
+        }
+    })
+
+    return result;
+}
+
+const mapRecentReservedBooks = async (books: BookStatusEntity[]) => {
+    const result = books.map(selectedBook => {
+        const reservedOn = selectedBook.reserved_on ? new Date(selectedBook.reserved_on).toISOString() : null;
+
+        return {
+            id: selectedBook.id,
+            bookTitle: selectedBook.book.name,
+            studentName: selectedBook.student.user.full_name || 'Unknown Student',
+            reservedOn
+        }
+    })
+
+    return result;
+}
