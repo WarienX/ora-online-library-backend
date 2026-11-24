@@ -17,7 +17,7 @@ export const getAllStudentsList = requestHandler(async (req: IRequest, res: Resp
 })
 
 export const addNewBook = requestHandler(async (req: IRequest, res: Response) => {
-    const { book_name, series_name, author, genre, language, gradeId } = req.body;
+    const { book_name, series_name, author, genre, language, gradeId, position } = req.body;
 
     const bookRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
     const bookName = (book_name as string).trim();
@@ -34,7 +34,9 @@ export const addNewBook = requestHandler(async (req: IRequest, res: Response) =>
             author,
             genre,
             language,
-            grade_id: gradeId
+            count: 1,
+            grade_id: gradeId,
+            position
         });
         const savedBook = await bookRepo.save(newBook);
 
@@ -46,7 +48,7 @@ export const addNewBook = requestHandler(async (req: IRequest, res: Response) =>
 })
 
 export const editBookData = requestHandler(async (req: IRequest, res: Response) => {
-    const { book_id, book_name, series_name, author, genre, language, gradeId } = req.body;
+    const { book_id, book_name, series_name, author, genre, language, gradeId, position } = req.body;
 
     const bookRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
     let checkExistingBook = await bookRepo.findOneBy({
@@ -68,12 +70,13 @@ export const editBookData = requestHandler(async (req: IRequest, res: Response) 
         throw new ExpressException("Another Book with same name exists", StatusCodes.FORBIDDEN);
     }
 
-    checkExistingBook.name = bookName && bookName.length > 0 ? bookName : checkExistingBook.name;
+    checkExistingBook.name = bookName && bookName.trim().length > 0 ? bookName.trim() : checkExistingBook.name;
     checkExistingBook.series_name = series_name && series_name.trim().length > 0 ? series_name.trim() : checkExistingBook.series_name;
     checkExistingBook.author = author && author.trim().length > 0 ? author.trim() : checkExistingBook.author;
     checkExistingBook.genre = genre && genre.trim().length > 0 ? genre.trim() : checkExistingBook.genre;
     checkExistingBook.language = language && language.trim().length > 0 ? language.trim() : checkExistingBook.language;
-    checkExistingBook.language = gradeId ? gradeId : checkExistingBook.grade_id;
+    checkExistingBook.grade_id = gradeId ? gradeId : checkExistingBook.grade_id;
+    checkExistingBook.position = position ? position : checkExistingBook.position;
 
     const updatedBook = await bookRepo.save(checkExistingBook);
 
