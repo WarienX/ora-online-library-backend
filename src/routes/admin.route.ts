@@ -1,23 +1,23 @@
 import { Router } from "express";
 import { addNewBook, addNewGrade, editBookData, editGrade, getAdminDashbaord, getAllBooksList, getAllStudentsList, getGradesList, getSingleGradeData, importBooksViaXlsx, patchBookStatusData } from "../controllers";
 import { upload } from "../utils";
-import { adminMiddleware, authorizationMiddleware } from "../middlewares";
+import { adminMiddleware } from "../middlewares";
 
 export const adminRoute = (app: Router) => {
     const router = Router();
 
-    router.post('/books/list', authorizationMiddleware, getAllBooksList);
-    router.post('/book', authorizationMiddleware, addNewBook);
-    router.put('/book', authorizationMiddleware, editBookData);
-    router.put('/book/status', authorizationMiddleware, patchBookStatusData);
-    router.post('/book/import', authorizationMiddleware, upload.single('file'), importBooksViaXlsx);
+    router.post('/books/list', adminMiddleware, getAllBooksList);
+    router.post('/book', adminMiddleware, addNewBook);
+    router.put('/book', adminMiddleware, editBookData);
+    router.put('/book/status', adminMiddleware, patchBookStatusData);
+    router.post('/book/import', adminMiddleware, upload.single('file'), importBooksViaXlsx);
 
-    router.post('/grade', authorizationMiddleware, addNewGrade);
-    router.put('/grade', authorizationMiddleware, editGrade);
-    router.post('/grade/data', authorizationMiddleware, getSingleGradeData);
-    router.get('/grades/list', authorizationMiddleware, getGradesList);
+    router.post('/grade', adminMiddleware, addNewGrade);
+    router.put('/grade', adminMiddleware, editGrade);
+    router.post('/grade/data', adminMiddleware, getSingleGradeData);
+    router.get('/grades/list', adminMiddleware, getGradesList);
 
-    router.get('/students/list', authorizationMiddleware, getAllStudentsList);
+    router.get('/students/list', adminMiddleware, getAllStudentsList);
     
     router.get('/dashboard', adminMiddleware, getAdminDashbaord);
 
