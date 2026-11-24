@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { addNewBook, addNewGrade, editBookData, editGrade, getAllBooksList, getAllStudentsList, getGradesList, getSingleGradeData, importBooksViaXlsx, patchBookStatusData } from "../controllers";
+import { addNewBook, addNewGrade, editBookData, editGrade, getAdminDashbaord, getAllBooksList, getAllStudentsList, getGradesList, getSingleGradeData, importBooksViaXlsx, patchBookStatusData } from "../controllers";
 import { upload } from "../utils";
-import { authorizationMiddleware } from "../middlewares";
+import { adminMiddleware, authorizationMiddleware } from "../middlewares";
 
 export const adminRoute = (app: Router) => {
     const router = Router();
@@ -18,6 +18,8 @@ export const adminRoute = (app: Router) => {
     router.get('/grades/list', authorizationMiddleware, getGradesList);
 
     router.get('/students/list', authorizationMiddleware, getAllStudentsList);
+    
+    router.get('/dashboard', adminMiddleware, getAdminDashbaord);
 
     app.use( '/admin', router )
 }

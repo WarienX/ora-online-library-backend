@@ -1,5 +1,5 @@
-import { Equal, ILike, In, Not, Or, Repository } from "typeorm";
-import { BookEntity, BookGradeEntity, BookStatus, BookStatusEntity, StudentEntity, UserRole } from "../libs";
+import { Equal, ILike, In, LessThan, Not, Or, Repository } from "typeorm";
+import { BookEntity, BookGradeEntity, BookStatus, BookStatusEntity, GradeEntity, StudentEntity, UserRole } from "../libs";
 import { getTypeOrmRepository } from "../utils";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
@@ -374,4 +374,79 @@ const mapRecentReservedBooks = async (books: BookStatusEntity[]) => {
     })
 
     return result;
+}
+
+export const getAdminDashboardStats = async () => {
+    const bookRepo = getTypeOrmRepository(BookEntity) as Repository<BookEntity>;
+    const statusRepo = getTypeOrmRepository(BookStatusEntity) as Repository<BookStatusEntity>;
+    const studentRepo = getTypeOrmRepository(StudentEntity) as Repository<StudentEntity>;
+    const gradeRepo = getTypeOrmRepository(GradeEntity) as Repository<GradeEntity>;
+
+    const [
+    totalBooks,
+    availableBooks,
+    borrowedBooks,
+    reservedBooks,
+    totalStudents,
+    totalGrades
+  ] = await Promise.all([
+    bookRepo.count(),
+    bookRepo.count({ where: { status: BookStatus.AVAILABLE } }),
+    bookRepo.count({ where: { status: BookStatus.BORROWED } }),
+    bookRepo.count({ where: { status: BookStatus.RESERVED } }),
+    studentRepo.count(),
+    gradeRepo.count()
+  ]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const overdueBooks = await statusRepo.count({
+    where: {
+      status: BookStatus.BORROWED,
+      return_by_date: LessThan(today.toISOString())
+    }
+  });
+
+  const recentBorrowRows = await statusRepo.find({
+    where: { status: BookStatus.BORROWED },
+    order: { borrowed_on: 'DESC' },
+    take: 5,
+    relations: {
+      book: true,
+      student: {
+        user: true
+      }
+    }
+  });
+
+  const recentBorrows = await mapRecentBorrowedBooks(recentBorrowRows);
+
+  const recentReserveRows = await statusRepo.find({
+    where: { status: BookStatus.RESERVED },
+    order: { reserved_on: 'DESC' },
+    take: 5,
+    relations: {
+      book: true,
+      student: {
+        user: true
+      }
+    }
+  });
+
+  const recentReservations = await mapRecentReservedBooks(recentReserveRows);
+
+  return {
+    metrics: {
+      totalBooks,
+      availableBooks,
+      borrowedBooks,
+      reservedBooks,
+      overdueBooks,
+      totalStudents,
+      totalGrades
+    },
+    recentBorrows,
+    recentReservations
+  };
 }

@@ -29,9 +29,6 @@ const handler = async (req: IRequest, res: Response, next: NextFunction) => {
                 next();
             } else {
                 throw new ExpressException("Session Expired, Login again to continue", StatusCodes.UNAUTHORIZED);
-                /* return res.status(StatusCodes.UNAUTHORIZED).send({
-                    message: "Session Expired, Login again to continue",
-                }); */
             }
         })
     }

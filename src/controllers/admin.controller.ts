@@ -4,7 +4,7 @@ import { getTypeOrmRepository, requestHandler } from "../utils";
 import { Not, Repository } from "typeorm";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
-import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList, getAdminStudentsList } from "../services";
+import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList, getAdminDashboardStats, getAdminStudentsList } from "../services";
 import { readExcelFile } from "../utils";
 
 export const getAllStudentsList = requestHandler(async (req: IRequest, res: Response) => {
@@ -214,5 +214,13 @@ export const importBooksViaXlsx = requestHandler(async (req: IRequest, res: Resp
         message: 'Books imported successfully',
         data: workbookData,
         resp
+    });
+})
+
+export const getAdminDashbaord = requestHandler(async (req: IRequest, res: Response) => {
+    const dashboardStats = await getAdminDashboardStats();
+    return res.status(StatusCodes.OK).json({
+        message: 'Dashboard data fetched successfully',
+        data: dashboardStats
     });
 })
