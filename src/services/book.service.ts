@@ -11,6 +11,9 @@ export const getBookData = async (bookId: number) => {
     const getBookStatus = await bookRepo.findOne({
         where: {
             id: bookId
+        },
+        relations: {
+            grade: true
         }
     })
     return getBookStatus;

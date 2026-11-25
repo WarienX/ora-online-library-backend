@@ -4,7 +4,7 @@ import { getTypeOrmRepository, requestHandler } from "../utils";
 import { Not, Repository } from "typeorm";
 import { ExpressException } from "../errors";
 import { StatusCodes } from "http-status-codes";
-import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList, getAdminDashboardStats, getAdminStudentsList } from "../services";
+import { addBookData, addGrades, addNewBookStatus, editGrades, fetchGradeById, fetchGrades, getAdminBooksList, getAdminDashboardStats, getAdminStudentsList, getBookData } from "../services";
 import { readExcelFile } from "../utils";
 
 export const getAllStudentsList = requestHandler(async (req: IRequest, res: Response) => {
@@ -119,6 +119,21 @@ export const getAllBooksList = requestHandler(async (req: IRequest, res: Respons
         totalPages: Math.ceil(count / limit),
         list: adminBooksList
     });
+})
+
+export const getSingleBookData = requestHandler(async (req: IRequest, res: Response) => {
+    const { book_id } = req.body;
+    
+    try {
+        const bookData = await getBookData(book_id);
+        
+        return res.status(StatusCodes.OK).json({
+            message: 'Book data fetched successfully',
+            data: bookData
+        });
+    } catch(error) {
+        throw new ExpressException("Grade not found", StatusCodes.NOT_FOUND);
+    }
 })
 
 export const addNewGrade = requestHandler(async (req: IRequest, res: Response) => {
